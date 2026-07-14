@@ -1,0 +1,135 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/property_model.dart';
+import '../core/constants/app_constants.dart';
+
+// Search filters state
+class PropertyFilters {
+  final String? purpose;
+  final String? type;
+  final String? city;
+  final double? minPrice;
+  final double? maxPrice;
+  final int? bhk;
+  final String? status;
+  final String sortBy;
+
+  const PropertyFilters({
+    this.purpose,
+    this.type,
+    this.city,
+    this.minPrice,
+    this.maxPrice,
+    this.bhk,
+    this.status,
+    this.sortBy = 'createdAt',
+  });
+
+  PropertyFilters copyWith({
+    String? purpose, String? type, String? city,
+    double? minPrice, double? maxPrice, int? bhk,
+    String? status, String? sortBy,
+  }) {
+    return PropertyFilters(
+      purpose: purpose ?? this.purpose,
+      type: type ?? this.type,
+      city: city ?? this.city,
+      minPrice: minPrice ?? this.minPrice,
+      maxPrice: maxPrice ?? this.maxPrice,
+      bhk: bhk ?? this.bhk,
+      status: status ?? this.status,
+      sortBy: sortBy ?? this.sortBy,
+    );
+  }
+
+  PropertyFilters clear() => const PropertyFilters();
+}
+
+final propertyFiltersProvider =
+    StateProvider<PropertyFilters>((ref) => const PropertyFilters());
+
+// Featured properties
+final featuredPropertiesProvider = StreamProvider<List<PropertyModel>>((ref) {
+  return FirebaseFirestore.instance
+      .collection(AppConstants.colProperties)
+      .where('isFeatured', isEqualTo: true)
+      .limit(10)
+      .snapshots()
+      .map((snap) => snap.docs
+          .map((d) => PropertyModel.fromMap(d.data(), d.id))
+          .toList());
+});
+
+// All properties with filters
+final propertiesProvider =
+    StreamProvider.family<List<PropertyModel>, PropertyFilters>((ref, filters) {
+  Query query = FirebaseFirestore.instance
+      .collection(AppConstants.colProperties);
+
+  if (filters.purpose != null) {
+    query = query.where('purpose', isEqualTo: filters.purpose);
+  }
+  if (filters.type != null) {
+    query = query.where('type', isEqualTo: filters.type);
+  }
+  if (filters.city != null) {
+    query = query.where('city', isEqualTo: filters.city);
+  }
+  if (filters.bhk != null) {
+    query = query.where('bhk', isEqualTo: filters.bhk);
+  }
+  if (filters.status != null) {
+    query = query.where('status', isEqualTo: filters.status);
+  }
+
+  query = query.orderBy(filters.sortBy, descending: true).limit(AppConstants.pageSize);
+
+  return query.snapshots().map((snap) => snap.docs
+      .map((d) => PropertyModel.fromMap(d.data() as Map<String, dynamic>, d.id))
+      .toList());
+});
+
+// Single property
+final propertyByIdProvider =
+    StreamProvider.family<PropertyModel?, String>((ref, id) {
+  return FirebaseFirestore.instance
+      .collection(AppConstants.colProperties)
+      .doc(id)
+      .snapshots()
+      .map((doc) => doc.exists
+          ? PropertyModel.fromMap(doc.data()!, doc.id)
+          : null);
+});
+
+// Seller's own listings
+final sellerPropertiesProvider =
+    StreamProvider.family<List<PropertyModel>, String>((ref, sellerId) {
+  return FirebaseFirestore.instance
+      .collection(AppConstants.colProperties)
+      .where('sellerId', isEqualTo: sellerId)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((snap) => snap.docs
+          .map((d) => PropertyModel.fromMap(d.data(), d.id))
+          .toList());
+});
+
+// Compare list state (up to 3)
+final compareListProvider =
+    StateNotifierProvider<CompareNotifier, List<String>>(
+  (ref) => CompareNotifier(),
+);
+
+class CompareNotifier extends StateNotifier<List<String>> {
+  CompareNotifier() : super([]);
+
+  void toggle(String propertyId) {
+    if (state.contains(propertyId)) {
+      state = state.where((id) => id != propertyId).toList();
+    } else if (state.length < 3) {
+      state = [...state, propertyId];
+    }
+  }
+
+  void clear() => state = [];
+}

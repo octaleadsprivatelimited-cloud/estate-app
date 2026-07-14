@@ -1,0 +1,38 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.g.dart
+*.freezed.dart
+firebase_options.dart
+
+# Android
+android/local.properties
+android/.gradle
+android/app/google-services.json
+android/key.properties
+android/app/upload-keystore.jks
+*.apk
+*.aab
+
+# iOS
+ios/Pods/
+ios/Runner/GoogleService-Info.plist
+ios/.symlinks/
+ios/Flutter/flutter_export_environment.sh
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Pods/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Secrets
+.env
+*.env.local
