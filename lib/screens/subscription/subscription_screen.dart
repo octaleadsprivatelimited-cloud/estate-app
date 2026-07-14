@@ -115,7 +115,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                         border: Border.all(color: isSelected ? plan.color : Colors.transparent, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: isSelected ? plan.color.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.05),
+                            color: isSelected ? plan.color.withOpacity(0.15) : Colors.black.withOpacity(0.05),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -135,7 +135,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: plan.color.withValues(alpha: 0.12),
+                                          color: plan.color.withOpacity(0.12),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Icon(Icons.star_rounded, color: plan.color, size: 18),

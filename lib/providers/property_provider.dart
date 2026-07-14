@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/property_model.dart';
 import '../core/constants/app_constants.dart';
+import '../core/constants/demo_data.dart';
+import 'auth_provider.dart';
 
 // Search filters state
 class PropertyFilters {
@@ -50,6 +52,11 @@ final propertyFiltersProvider =
 
 // Featured properties
 final featuredPropertiesProvider = StreamProvider<List<PropertyModel>>((ref) {
+  final isDemo = ref.watch(isDemoModeProvider);
+  if (isDemo) {
+    return Stream.value(DemoData.properties.where((p) => p.isFeatured).toList());
+  }
+
   return FirebaseFirestore.instance
       .collection(AppConstants.colProperties)
       .where('isFeatured', isEqualTo: true)
@@ -63,6 +70,14 @@ final featuredPropertiesProvider = StreamProvider<List<PropertyModel>>((ref) {
 // All properties with filters
 final propertiesProvider =
     StreamProvider.family<List<PropertyModel>, PropertyFilters>((ref, filters) {
+  final isDemo = ref.watch(isDemoModeProvider);
+  if (isDemo) {
+    var props = DemoData.properties;
+    if (filters.purpose != null) props = props.where((p) => p.purpose == filters.purpose).toList();
+    if (filters.type != null) props = props.where((p) => p.type == filters.type).toList();
+    return Stream.value(props);
+  }
+
   Query query = FirebaseFirestore.instance
       .collection(AppConstants.colProperties);
 
@@ -92,6 +107,11 @@ final propertiesProvider =
 // Single property
 final propertyByIdProvider =
     StreamProvider.family<PropertyModel?, String>((ref, id) {
+  final isDemo = ref.watch(isDemoModeProvider);
+  if (isDemo) {
+    return Stream.value(DemoData.properties.firstWhere((p) => p.id == id, orElse: () => DemoData.properties.first));
+  }
+
   return FirebaseFirestore.instance
       .collection(AppConstants.colProperties)
       .doc(id)
@@ -104,6 +124,11 @@ final propertyByIdProvider =
 // Seller's own listings
 final sellerPropertiesProvider =
     StreamProvider.family<List<PropertyModel>, String>((ref, sellerId) {
+  final isDemo = ref.watch(isDemoModeProvider);
+  if (isDemo) {
+    return Stream.value(DemoData.properties.where((p) => p.sellerId == 'seller_1').toList());
+  }
+
   return FirebaseFirestore.instance
       .collection(AppConstants.colProperties)
       .where('sellerId', isEqualTo: sellerId)

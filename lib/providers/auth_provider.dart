@@ -2,14 +2,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
+import '../core/constants/demo_data.dart';
+
+// Global Demo Mode Flag
+final isDemoModeProvider = StateProvider<bool>((ref) => false);
 
 // Firebase Auth state stream
 final authStateProvider = StreamProvider<User?>((ref) {
+  final isDemo = ref.watch(isDemoModeProvider);
+  if (isDemo) return Stream.value(null); // No real Firebase user in demo mode
   return FirebaseAuth.instance.authStateChanges();
 });
 
-// Current user profile from Firestore
+// Current user profile
 final currentUserProvider = StreamProvider<UserModel?>((ref) {
+  final isDemo = ref.watch(isDemoModeProvider);
+  if (isDemo) return Stream.value(DemoData.demoUser);
+
   final authState = ref.watch(authStateProvider);
   return authState.when(
     data: (user) {
@@ -29,7 +38,13 @@ final currentUserProvider = StreamProvider<UserModel?>((ref) {
 
 // Auth notifier for login/register/logout
 class AuthNotifier extends StateNotifier<AsyncValue<void>> {
-  AuthNotifier() : super(const AsyncValue.data(null));
+  final Ref ref;
+  AuthNotifier(this.ref) : super(const AsyncValue.data(null));
+
+  void enterDemoMode() {
+    ref.read(isDemoModeProvider.notifier).state = true;
+    state = const AsyncValue.data(null);
+  }
 
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
@@ -81,7 +96,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
   }
 
   Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
+    final isDemo = ref.read(isDemoModeProvider);
+    if (isDemo) {
+      ref.read(isDemoModeProvider.notifier).state = false;
+    } else {
+      await FirebaseAuth.instance.signOut();
+    }
     state = const AsyncValue.data(null);
   }
 
@@ -92,5 +112,5 @@ class AuthNotifier extends StateNotifier<AsyncValue<void>> {
 
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<void>>(
-  (ref) => AuthNotifier(),
+  (ref) => AuthNotifier(ref),
 );

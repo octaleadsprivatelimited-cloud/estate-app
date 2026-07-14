@@ -148,6 +148,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   isLoading: _loading,
                   isFullWidth: true,
                 ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.1),
+                const SizedBox(height: 16),
+                EkButton(
+                  label: 'Try Demo Mode',
+                  onPressed: () {
+                    ref.read(authNotifierProvider.notifier).enterDemoMode();
+                    context.go('/home');
+                  },
+                  isFullWidth: true,
+                  isOutlined: true,
+                  color: AppColors.secondary,
+                ).animate().fadeIn(delay: 320.ms).slideY(begin: 0.1),
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
